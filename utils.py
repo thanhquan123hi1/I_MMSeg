@@ -164,7 +164,7 @@ class DiceLoss(nn.Module):
             loss_label = self._dice_loss(inputs[:, i], target[:, i])
             class_wise_dice.append(1.0 - loss_label.item())
             loss += loss_label * weight[i]
-        print(class_wise_dice)
+        # print(class_wise_dice)
         return loss / self.n_classes
 
 

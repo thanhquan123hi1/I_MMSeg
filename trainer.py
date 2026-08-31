@@ -87,26 +87,28 @@ def trainer_Myops(args, model, snapshot_path):
 
             optimizer.zero_grad()
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             lr_ = base_lr * (1.0 - iter_num / max_iterations) ** 0.9
             for param_group in optimizer.param_groups:
                 param_group['lr'] = lr_
             iter_num = iter_num + 1
             writer.add_scalar('info/lr', lr_, iter_num)
-            writer.add_scalar('info/total_loss', loss, iter_num)
-            writer.add_scalar('info/loss_ce', out_dice_loss, iter_num)
-
-            logging.info('iteration %d : loss : %f, loss_fuse: %f' % (iter_num, loss.item(), out_dice_loss.item()))
+            writer.add_scalar('info/total_loss', loss.item(), iter_num)
+            writer.add_scalar('info/loss_ce', out_dice_loss.item(), iter_num)
 
             if iter_num % 20 == 0:
-                image = image_batch[1, 0:1, :, :]
-                image = (image - image.min()) / (image.max() - image.min())
+                logging.info('iteration %d : loss : %f, loss_fuse: %f' % (iter_num, loss.item(), out_dice_loss.item()))
+                sample_idx = 0 if image_batch.shape[0] == 1 else 1
+                image = image_batch[sample_idx, 0:1, :, :]
+                image = (image - image.min()) / (image.max() - image.min() + 1e-8)
                 writer.add_image('train/Image', image, iter_num)
-                out_pre = torch.argmax(torch.softmax(out_pre, dim=1), dim=1, keepdim=True)
-                writer.add_image('train/Prediction', out_pre[1, ...] * 50, iter_num)
-                labs = label_batch[1, ...].unsqueeze(0) * 50
+                out_pre_img = torch.argmax(torch.softmax(out_pre, dim=1), dim=1, keepdim=True)
+                writer.add_image('train/Prediction', out_pre_img[sample_idx, ...] * 50, iter_num)
+                labs = label_batch[sample_idx, ...].unsqueeze(0) * 50
                 writer.add_image('train/GroundTruth', labs, iter_num)
 
+        torch.cuda.empty_cache()
         save_interval = 20  
         if (epoch_num + 1) % save_interval == 0:
             save_mode_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')

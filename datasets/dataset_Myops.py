@@ -4,7 +4,7 @@ import h5py
 import numpy as np
 import torch
 from scipy import ndimage
-from scipy.ndimage.interpolation import zoom
+from scipy.ndimage import zoom
 from torch.utils.data import Dataset
 
 

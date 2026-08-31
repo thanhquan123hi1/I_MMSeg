@@ -122,7 +122,7 @@ if __name__ == "__main__":
     checkpoint = torch.load(snapshot)
     new_state_dict = OrderedDict()
     for k, v in checkpoint.items():
-        name = k[7:]
+        name = k[7:] if k.startswith("module.") else k
         new_state_dict[name] = v
     net.load_state_dict(new_state_dict)
     snapshot_name = snapshot_path.split('/')[-1]
