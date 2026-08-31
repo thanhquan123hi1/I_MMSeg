@@ -9,7 +9,7 @@ import torch.nn.functional as F
 class ContrastiveLoss(nn.Module):
     def __init__(self,
                  ignore_index=-1,
-                 prompt_num=2):
+                 prompt_num=1):
         super(ContrastiveLoss, self).__init__()
 
         self.ignore_label = ignore_index
@@ -90,9 +90,12 @@ class ContrastiveLoss(nn.Module):
             features = features.permute(0, 2, 3, 1).reshape(batch_size, -1, features.shape[1])
 
             anchor, target = self.sample_anchor(features, i_label, ignore, n_view)
+            if anchor is None:
+                continue
             anchor = torch.cat([anchor, text_embedding], dim=0)
             anchor = F.normalize(anchor, p=2, dim=1)
-            text_embedding_label = torch.tensor([0, 1, 2, 3]).repeat(self.prompt_num).to(target.device)
+            prompt_count = text_embedding.shape[0] // 4 if text_embedding.shape[0] >= 4 else 1
+            text_embedding_label = torch.tensor([0, 1, 2, 3]).repeat(prompt_count).to(target.device)
             target = torch.cat([target, text_embedding_label], dim=0)
             loss += self.contrastive_loss(anchor, target)
 
