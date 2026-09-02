@@ -694,12 +694,12 @@ class VisionTransformer(nn.Module):
         t2w_mask = torch.mul(t2w_f, t2w_mask).reshape(batch_size,C,-1)
 
         # Calculate the cosine similarity between each pair of modes
-        cine_psir_cos_sim = abs(pixelwise_cosine_similarity(cine_mask, psir_mask))
-        cine_t2w_cos_sim = abs(pixelwise_cosine_similarity(cine_mask, t2w_mask))
-        psir_cine_cos_sim = abs(pixelwise_cosine_similarity(psir_mask, cine_mask))
-        psir_t2w_cos_sim = abs(pixelwise_cosine_similarity(psir_mask, t2w_mask))
-        t2w_cine_cos_sim = abs(pixelwise_cosine_similarity(t2w_mask, cine_mask))
-        t2w_psir_cos_sim = abs(pixelwise_cosine_similarity(t2w_mask, psir_mask))
+        cine_psir_cos_sim = torch.abs(pixelwise_cosine_similarity(cine_mask, psir_mask))
+        cine_t2w_cos_sim = torch.abs(pixelwise_cosine_similarity(cine_mask, t2w_mask))
+        psir_cine_cos_sim = torch.abs(pixelwise_cosine_similarity(psir_mask, cine_mask))
+        psir_t2w_cos_sim = torch.abs(pixelwise_cosine_similarity(psir_mask, t2w_mask))
+        t2w_cine_cos_sim = torch.abs(pixelwise_cosine_similarity(t2w_mask, cine_mask))
+        t2w_psir_cos_sim = torch.abs(pixelwise_cosine_similarity(t2w_mask, psir_mask))
  
         cine_cp = cosine_attention_update(cine_mask, cine_psir_cos_sim).reshape(batch_size, C, H, W)
         cine_ct = cosine_attention_update(cine_mask, cine_t2w_cos_sim).reshape(batch_size, C, H, W)

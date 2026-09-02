@@ -82,10 +82,9 @@ def preprocess_valid_image(image_files: str, label_files: str, dst_path:str, mod
             image_data = (image_data - a_min) / (a_max - a_min)
 
         save_path = f"{dst_path}/{modality}/test_vol_h5/{name}.npy.h5"
-        f = h5py.File(save_path, 'w')
-        f['image'] = image_data
-        f['label'] = label_data
-        f.close()
+        with h5py.File(save_path, 'w') as f:
+            f['image'] = image_data
+            f['label'] = label_data
 
         if index == 0:
             with open(f"{PROJECT_ROOT}/list/test_vol.txt", "a") as file:

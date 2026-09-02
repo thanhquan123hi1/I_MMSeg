@@ -1,4 +1,5 @@
 import argparse
+import gc
 import logging
 import os
 import random
@@ -20,11 +21,13 @@ def trainer_Myops(args, model, snapshot_path):
     from datasets.dataset_Myops import Myops_dataset, RandomGenerator
     logging.basicConfig(filename=snapshot_path + "/log.txt", level=logging.INFO,
                         format='[%(asctime)s.%(msecs)03d] %(message)s', datefmt='%H:%M:%S')
-    logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+    if not any(isinstance(h, logging.StreamHandler) and h.stream == sys.stdout for h in logging.getLogger().handlers):
+        logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
     logging.info(str(args))
     base_lr = args.base_lr
     num_classes = args.num_classes
     batch_size = args.batch_size * args.n_gpu
+    start_epoch = getattr(args, 'start_epoch', 0)
     db_train = Myops_dataset(base_dir=args.root_path, base_dir1=args.root_path1, base_dir2=args.root_path2, list_dir=args.list_dir, split="train",
                                transform=transforms.Compose(
                                    [RandomGenerator(output_size=[args.img_size, args.img_size])]))
@@ -43,11 +46,11 @@ def trainer_Myops(args, model, snapshot_path):
     dice_loss = DiceLoss(num_classes)
     optimizer = optim.AdamW(model.parameters(), lr=base_lr, weight_decay=0.0001)
     writer = SummaryWriter(snapshot_path + '/log')
-    iter_num = 0
     max_epoch = args.max_epochs
     max_iterations = args.max_epochs * len(trainloader) 
+    iter_num = start_epoch * len(trainloader)
     logging.info("{} iterations per epoch. {} max iterations ".format(len(trainloader), max_iterations))
-    iterator = tqdm(range(max_epoch), ncols=70)
+    iterator = tqdm(range(start_epoch, max_epoch), ncols=70)
     for epoch_num in iterator:
         do_contrast = epoch_num > args.start_contrast_epoch
         for i_batch, sampled_batch in enumerate(trainloader):
@@ -100,15 +103,17 @@ def trainer_Myops(args, model, snapshot_path):
             if iter_num % 20 == 0:
                 logging.info('iteration %d : loss : %f, loss_fuse: %f' % (iter_num, loss.item(), out_dice_loss.item()))
                 sample_idx = 0 if image_batch.shape[0] == 1 else 1
-                image = image_batch[sample_idx, 0:1, :, :]
+                image = image_batch[sample_idx, 0:1, :, :].detach()
                 image = (image - image.min()) / (image.max() - image.min() + 1e-8)
                 writer.add_image('train/Image', image, iter_num)
-                out_pre_img = torch.argmax(torch.softmax(out_pre, dim=1), dim=1, keepdim=True)
+                with torch.no_grad():
+                    out_pre_img = torch.argmax(torch.softmax(out_pre.detach(), dim=1), dim=1, keepdim=True)
                 writer.add_image('train/Prediction', out_pre_img[sample_idx, ...] * 50, iter_num)
-                labs = label_batch[sample_idx, ...].unsqueeze(0) * 50
+                labs = label_batch[sample_idx, ...].unsqueeze(0).detach() * 50
                 writer.add_image('train/GroundTruth', labs, iter_num)
 
         torch.cuda.empty_cache()
+        gc.collect()
         save_interval = 20  
         if (epoch_num + 1) % save_interval == 0:
             save_mode_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
@@ -119,11 +124,9 @@ def trainer_Myops(args, model, snapshot_path):
             save_mode_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
             torch.save(model.state_dict(), save_mode_path)
             logging.info("save model to {}".format(save_mode_path))
-            iterator.close()
-        if epoch_num >=max_epoch:    
+        if epoch_num >= max_epoch:    
             break
 
-
-
+    iterator.close()
     writer.close()
     return "Training Finished!"

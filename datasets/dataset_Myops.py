@@ -112,7 +112,8 @@ class Myops_dataset(Dataset):
         """
         self.transform = transform  
         self.split = split
-        self.sample_list = open(os.path.join(list_dir, self.split+'.txt')).readlines()
+        with open(os.path.join(list_dir, self.split+'.txt'), 'r') as f:
+            self.sample_list = f.readlines()
         self.data_dir = base_dir
         self.data_dir1 = base_dir1
         self.data_dir2 = base_dir2
@@ -126,23 +127,25 @@ class Myops_dataset(Dataset):
             data_path = os.path.join(self.data_dir, slice_name+'.npz')
             data_path_1 = os.path.join(self.data_dir1, slice_name+'.npz')
             data_path_2 = os.path.join(self.data_dir2, slice_name+'.npz')
-            data = np.load(data_path)
-            data_1 = np.load(data_path_1)
-            data_2 = np.load(data_path_2)
-            image, label = data['image'], data['label']
-            image1 = data_1['image']
-            image2 = data_2['image']
+            with np.load(data_path) as data:
+                image = data['image'].copy()
+                label = data['label'].copy()
+            with np.load(data_path_1) as data_1:
+                image1 = data_1['image'].copy()
+            with np.load(data_path_2) as data_2:
+                image2 = data_2['image'].copy()
         else:
             vol_name = self.sample_list[idx].strip('\n')
             filepath = self.data_dir + "/{}.npy.h5".format(vol_name)
             filepath_1 = self.data_dir1 + "/{}.npy.h5".format(vol_name)
             filepath_2 = self.data_dir2 + "/{}.npy.h5".format(vol_name)
-            data = h5py.File(filepath)
-            data1 = h5py.File(filepath_1)
-            data2 = h5py.File(filepath_2)
-            image, label = data['image'][:], data['label'][:]
-            image1 = data1['image'][:]
-            image2 = data2['image'][:]
+            with h5py.File(filepath, 'r') as data:
+                image = data['image'][:].copy()
+                label = data['label'][:].copy()
+            with h5py.File(filepath_1, 'r') as data1:
+                image1 = data1['image'][:].copy()
+            with h5py.File(filepath_2, 'r') as data2:
+                image2 = data2['image'][:].copy()
 
         sample = {'image': image, 'image1':image1, "image2":image2, 'label': label}
         if self.transform:

@@ -10,6 +10,7 @@ from networks.vit_seg_modeling import CONFIGS as CONFIGS_ViT_seg
 from trainer import trainer_Myops
 import open_clip
 from open_clip import get_tokenizer
+from collections import OrderedDict
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -46,6 +47,8 @@ parser.add_argument('--region_fusion_start_epoch', default=100, type=int)
 parser.add_argument('--start_contrast_epoch', type=int, default=20, help='start contrastive loss epoch')
 parser.add_argument('--contrast_sample_num', type=int, default=10, help='contrastive sample_num')
 parser.add_argument('--contrast_w', type=float, default=0.1, help='contrastive loss weight')
+parser.add_argument('--resume', type=str, default=None, help='path to checkpoint .pth to resume training')
+parser.add_argument('--start_epoch', type=int, default=0, help='epoch number to resume from')
 
 args = parser.parse_args()
 
@@ -139,5 +142,14 @@ if __name__ == "__main__":
     if args.vit_name.find('R50') != -1:
         config_vit.patches.grid = (int(args.img_size / args.vit_patches_size), int(args.img_size / args.vit_patches_size))
     net = ViT_seg(config_vit, img_size=args.img_size, num_classes=config_vit.n_classes).cuda()
+    if args.resume:
+        checkpoint = torch.load(args.resume, map_location='cpu')
+        new_state_dict = OrderedDict()
+        for k, v in checkpoint.items():
+            name = k[7:] if k.startswith("module.") else k
+            new_state_dict[name] = v
+        net.load_state_dict(new_state_dict)
+        logging.info("Resumed model weights from {}".format(args.resume))
+        print("Resumed model weights from {}".format(args.resume))
     trainer = {'Myops': trainer_Myops,}
     trainer[dataset_name](args, net, snapshot_path)
