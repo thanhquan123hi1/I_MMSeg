@@ -19,10 +19,22 @@ from torchvision import transforms
 
 def trainer_Myops(args, model, snapshot_path):
     from datasets.dataset_Myops import Myops_dataset, RandomGenerator
-    logging.basicConfig(filename=snapshot_path + "/log.txt", level=logging.INFO,
-                        format='[%(asctime)s.%(msecs)03d] %(message)s', datefmt='%H:%M:%S')
-    if not any(isinstance(h, logging.StreamHandler) and h.stream == sys.stdout for h in logging.getLogger().handlers):
-        logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+    log_file_path = os.path.join(snapshot_path, "log.txt")
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter('[%(asctime)s.%(msecs)03d] %(message)s', datefmt='%H:%M:%S')
+    
+    # Ensure FileHandler exists and writes to log.txt
+    if not any(isinstance(h, logging.FileHandler) and os.path.abspath(getattr(h, 'baseFilename', '')) == os.path.abspath(log_file_path) for h in logger.handlers):
+        fh = logging.FileHandler(log_file_path, mode='a')
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+
+    # Ensure StreamHandler prints to terminal
+    if not any(isinstance(h, logging.StreamHandler) and getattr(h, 'stream', None) == sys.stdout for h in logger.handlers):
+        sh = logging.StreamHandler(sys.stdout)
+        sh.setFormatter(formatter)
+        logger.addHandler(sh)
     logging.info(str(args))
     base_lr = args.base_lr
     num_classes = args.num_classes
