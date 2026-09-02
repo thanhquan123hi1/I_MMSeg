@@ -274,7 +274,7 @@ class FeatureWiseAffine(nn.Module):
         text_embed = text_embed.unsqueeze(1)
         batch = x.shape[0]
         if self.use_affine_level:
-            gamma, beta = self.MLP(text_embed).view(batch, -1, 1, 1).chunk(2, dim=1)
+            gamma, beta = [t.clone() for t in self.MLP(text_embed).view(batch, -1, 1, 1).chunk(2, dim=1)]
             x = (1 + gamma) * x + beta
         return x
     
@@ -331,28 +331,28 @@ class ForwardPredictionHead(nn.Module):
         num_classes = params.size(0)
         num_layers = len(weight_nums)
 
-        params_splits = list(torch.split_with_sizes(
+        params_splits = [p.clone() for p in torch.split_with_sizes(
             params, weight_nums + bias_nums, dim=1
-        ))  # Split params into weights and biases
+        )]  # Split params into cloned weights and biases
 
         weight_splits = params_splits[:num_layers]
         bias_splits = params_splits[num_layers:]
 
         for l in range(num_layers):
             if l < num_layers - 1:
-                weight_splits[l] = weight_splits[l].reshape(num_classes * channels, -1, 1, 1)
-                bias_splits[l] = bias_splits[l].reshape(num_classes * channels)
+                weight_splits[l] = weight_splits[l].reshape(num_classes * channels, -1, 1, 1).clone()
+                bias_splits[l] = bias_splits[l].reshape(num_classes * channels).clone()
             else:
-                weight_splits[l] = weight_splits[l].reshape(num_classes, -1, 1, 1)
-                bias_splits[l] = bias_splits[l].reshape(num_classes)
+                weight_splits[l] = weight_splits[l].reshape(num_classes, -1, 1, 1).clone()
+                bias_splits[l] = bias_splits[l].reshape(num_classes).clone()
 
         return weight_splits, bias_splits
 
     def heads_forward(self, features, weights, biases, num_classes):
         assert features.dim() == 4
         n_layers = len(weights)
-        x = features #x:(1, 32, 128, 128)(b,c,h,w),num_classes=4
-        for i, (w, b) in enumerate(zip(weights, biases)):#w:(32,8,1,1).(32,8,1,1),(4,8,1,1);b:(32)(32)(4)
+        x = features
+        for i, (w, b) in enumerate(zip(weights, biases)):
             x = F.conv2d(
                 x, w, bias=b,
                 stride=1, padding=0,
@@ -370,12 +370,12 @@ class ForwardPredictionHead(nn.Module):
 
         for i in range(batch_size):
             # Combine vision-language embedding
-            feat_embed =  feat[i].unsqueeze(0).repeat(self.config.n_classes, 1, 1, 1)
+            feat_embed = feat[i].unsqueeze(0).repeat(self.config.n_classes, 1, 1, 1)
             clip_embed = clip_embedding.unsqueeze(2).unsqueeze(2)
             vision_language_embedding = torch.cat([feat_embed, clip_embed], dim=1)  # [4, 1024, 1, 1]
             
             params = self.controller(vision_language_embedding)
-            params.squeeze_(-1).squeeze_(-1)
+            params = params.squeeze(-1).squeeze(-1)
 
             # Prepare the decoder output
             decoder_out = decoder_output[i].unsqueeze(0)
@@ -545,7 +545,7 @@ class Class_Feature_Modulation(nn.Module):
         text_embed: [8]  Input text embedding
         """
         params = self.fc(text_embed)  # Output (8,)
-        gamma, beta = params.view(4, 2).chunk(2, dim=1)  # Transform into (4, 2), then split into gamma and beta
+        gamma, beta = [t.clone() for t in params.view(4, 2).chunk(2, dim=1)]  # Transform into (4, 2), then split into gamma and beta
 
         x = x * (1 + gamma) + beta  # Linear transformation
         return x
@@ -559,8 +559,10 @@ class VisionTransformer(nn.Module):
         self.zero_head = zero_head #The zero_head parameter is typically used to control the initialisation method for the model's classification head.
         self.classifier = config.classifier  #Define the classifier
         self.patches = config.patches.size
-        self.class_embedding = torch.load(f'{PROJECT_ROOT}/text_features/embedding_class_information.pth', weights_only=True).float()
-        self.modal_embedding = torch.load(f'{PROJECT_ROOT}/text_features/embedding_MRI_information.pth', weights_only=True).float()
+        class_embedding = torch.load(f'{PROJECT_ROOT}/text_features/embedding_class_information.pth', map_location='cpu').float()
+        modal_embedding = torch.load(f'{PROJECT_ROOT}/text_features/embedding_MRI_information.pth', map_location='cpu').float()
+        self.register_buffer('class_embedding', class_embedding)
+        self.register_buffer('modal_embedding', modal_embedding)
         self.transformer1 = Transformer(config, img_size, vis)
         self.transformer2 = Transformer(config, img_size, vis)
         self.transformer3 = Transformer(config, img_size, vis)
@@ -664,10 +666,10 @@ class VisionTransformer(nn.Module):
         self.config = config
 
     def forward(self, x, x1, x2, do_contrast=False):
-        modal_embedding = self.modal_embedding.cuda()
+        modal_embedding = self.modal_embedding.to(x.device)
         modal_features = self.modal_text_to_vision(modal_embedding)
         modal_features_2 = self.modal_text_to_weight(modal_embedding)
-        class_embedding = self.class_embedding.cuda()
+        class_embedding = self.class_embedding.to(x.device)
         class_features = self.text_to_vision(class_embedding)
         if x.size()[1] == 1:
             cine = x.repeat(1,3,1,1)

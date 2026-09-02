@@ -119,7 +119,7 @@ if __name__ == "__main__":
     net = ViT_seg(config_vit, img_size=args.img_size, num_classes=config_vit.n_classes).cuda()
 
     snapshot = f"{snapshot_path}/epoch_299.pth"
-    checkpoint = torch.load(snapshot)
+    checkpoint = torch.load(snapshot, map_location='cpu')
     new_state_dict = OrderedDict()
     for k, v in checkpoint.items():
         name = k[7:] if k.startswith("module.") else k
