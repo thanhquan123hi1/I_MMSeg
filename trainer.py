@@ -17,7 +17,28 @@ from utils import DiceLoss, SoftmaxWeightedLoss
 from utils import ContrastiveLoss
 from torchvision import transforms
 
+def trim_memory():
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    if sys.platform.startswith("linux"):
+        try:
+            import ctypes
+            libc = ctypes.CDLL("libc.so.6")
+            libc.malloc_trim(0)
+        except Exception:
+            pass
+
 def trainer_Myops(args, model, snapshot_path):
+    if sys.platform.startswith("linux"):
+        try:
+            import ctypes
+            libc = ctypes.CDLL("libc.so.6")
+            # M_MMAP_THRESHOLD = -3, M_TRIM_THRESHOLD = -1
+            libc.mallopt(ctypes.c_int(-3), ctypes.c_int(65536))
+            libc.mallopt(ctypes.c_int(-1), ctypes.c_int(65536))
+        except Exception:
+            pass
     from datasets.dataset_Myops import Myops_dataset, RandomGenerator
     log_file_path = os.path.join(snapshot_path, "log.txt")
     logger = logging.getLogger()
@@ -48,7 +69,9 @@ def trainer_Myops(args, model, snapshot_path):
     def worker_init_fn(worker_id):
         random.seed(args.seed + worker_id)
 
-    trainloader = DataLoader(db_train, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=True,
+    num_workers = getattr(args, 'num_workers', 0)
+    pin_memory = bool(getattr(args, 'pin_memory', 0))
+    trainloader = DataLoader(db_train, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=pin_memory,
                              worker_init_fn=worker_init_fn)
     if args.n_gpu > 1:
         model = nn.DataParallel(model)
@@ -66,8 +89,12 @@ def trainer_Myops(args, model, snapshot_path):
     for epoch_num in iterator:
         do_contrast = epoch_num > args.start_contrast_epoch
         for i_batch, sampled_batch in enumerate(trainloader):
-            image_batch, image1_batch, image2_batch, label_batch = sampled_batch['image'], sampled_batch['image1'], sampled_batch['image2'], sampled_batch['label']
-            image_batch, image1_batch, image2_batch, label_batch = image_batch.cuda(), image1_batch.cuda(), image2_batch.cuda(), label_batch.cuda()
+            image_batch = sampled_batch['image'].cuda(non_blocking=pin_memory)
+            image1_batch = sampled_batch['image1'].cuda(non_blocking=pin_memory)
+            image2_batch = sampled_batch['image2'].cuda(non_blocking=pin_memory)
+            label_batch = sampled_batch['label'].cuda(non_blocking=pin_memory)
+            del sampled_batch
+
             out_pre, dec_seg, features_embedding_list, text_embedding_list= model(image_batch, image1_batch, image2_batch, do_contrast)
             ignores = ([2,3],[0],[0])
             loss_all = 0
@@ -123,9 +150,13 @@ def trainer_Myops(args, model, snapshot_path):
                 writer.add_image('train/Prediction', out_pre_img[sample_idx, ...] * 50, iter_num)
                 labs = label_batch[sample_idx, ...].unsqueeze(0).detach().cpu() * 50
                 writer.add_image('train/GroundTruth', labs, iter_num)
+                writer.flush()
 
-        torch.cuda.empty_cache()
-        gc.collect()
+            del out_pre, dec_seg, features_embedding_list, text_embedding_list, loss
+            del image_batch, image1_batch, image2_batch, label_batch
+
+        writer.flush()
+        trim_memory()
         save_interval = 20  
         if (epoch_num + 1) % save_interval == 0:
             save_mode_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')

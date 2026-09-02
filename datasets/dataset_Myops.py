@@ -91,10 +91,11 @@ class RandomGenerator(object):
             
         x, y = image.shape
         if x != self.output_size[0] or y != self.output_size[1]:
-            image = zoom(image, (self.output_size[0] / x, self.output_size[1] / y), order=3)  
-            image1 = zoom(image1, (self.output_size[0] / x, self.output_size[1] / y), order=3)
-            image2 = zoom(image2, (self.output_size[0] / x, self.output_size[1] / y), order=3)
-            label = zoom(label, (self.output_size[0] / x, self.output_size[1] / y), order=0)
+            zoom_factors = (self.output_size[0] / x, self.output_size[1] / y)
+            image = zoom(image, zoom_factors, order=3, prefilter=False)  
+            image1 = zoom(image1, zoom_factors, order=3, prefilter=False)
+            image2 = zoom(image2, zoom_factors, order=3, prefilter=False)
+            label = zoom(label, zoom_factors, order=0, prefilter=False)
         image = torch.from_numpy(image.astype(np.float32)).unsqueeze(0)
         image1 = torch.from_numpy(image1.astype(np.float32)).unsqueeze(0)
         image2 = torch.from_numpy(image2.astype(np.float32)).unsqueeze(0)

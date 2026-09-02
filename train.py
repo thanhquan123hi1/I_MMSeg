@@ -49,6 +49,8 @@ parser.add_argument('--contrast_sample_num', type=int, default=10, help='contras
 parser.add_argument('--contrast_w', type=float, default=0.1, help='contrastive loss weight')
 parser.add_argument('--resume', type=str, default=None, help='path to checkpoint .pth to resume training')
 parser.add_argument('--start_epoch', type=int, default=0, help='epoch number to resume from')
+parser.add_argument('--num_workers', type=int, default=0, help='number of DataLoader workers')
+parser.add_argument('--pin_memory', type=int, default=0, help='whether to pin memory in DataLoader (0=False, 1=True)')
 
 args = parser.parse_args()
 
@@ -150,5 +152,8 @@ if __name__ == "__main__":
             new_state_dict[name] = v
         net.load_state_dict(new_state_dict)
         print("Resumed model weights from {}".format(args.resume))
+        del checkpoint, new_state_dict
+        import gc
+        gc.collect()
     trainer = {'Myops': trainer_Myops,}
     trainer[dataset_name](args, net, snapshot_path)
