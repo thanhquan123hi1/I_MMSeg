@@ -115,13 +115,13 @@ def trainer_Myops(args, model, snapshot_path):
             if iter_num % 20 == 0:
                 logging.info('iteration %d : loss : %f, loss_fuse: %f' % (iter_num, loss.item(), out_dice_loss.item()))
                 sample_idx = 0 if image_batch.shape[0] == 1 else 1
-                image = image_batch[sample_idx, 0:1, :, :].detach()
+                image = image_batch[sample_idx, 0:1, :, :].detach().cpu()
                 image = (image - image.min()) / (image.max() - image.min() + 1e-8)
                 writer.add_image('train/Image', image, iter_num)
                 with torch.no_grad():
-                    out_pre_img = torch.argmax(torch.softmax(out_pre.detach(), dim=1), dim=1, keepdim=True)
+                    out_pre_img = torch.argmax(torch.softmax(out_pre.detach(), dim=1), dim=1, keepdim=True).cpu()
                 writer.add_image('train/Prediction', out_pre_img[sample_idx, ...] * 50, iter_num)
-                labs = label_batch[sample_idx, ...].unsqueeze(0).detach() * 50
+                labs = label_batch[sample_idx, ...].unsqueeze(0).detach().cpu() * 50
                 writer.add_image('train/GroundTruth', labs, iter_num)
 
         torch.cuda.empty_cache()
