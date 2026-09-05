@@ -253,7 +253,7 @@ class Fusion_Embed(nn.Module):
         self.activation = nn.ReLU(inplace=True)
 
     def forward(self, x_A, x_B, x_C):
-        x = torch.concat([x_A, x_B, x_C], dim=1).contiguous()
+        x = torch.concat([x_A.contiguous(), x_B.contiguous(), x_C.contiguous()], dim=1)
         x = self.fusion_proj(x)
         x = self.norm(x)
         x = self.activation(x)
