@@ -1,5 +1,19 @@
 <h1 align="center">I-MMSeg: Intensity-guided Multimodal Image Segmentation</h1>
 
+## Local SCAR / M2-Plus comparison
+
+The default `train.py` and `test.py` entry points now implement the fixed
+**304 train / 76 test, 300 epochs, final checkpoint, no validation** benchmark.
+The official architecture and original segmentation/contrastive objective are
+preserved; augmentation and evaluation follow the pinned local SCAR reference.
+See **[BENCHMARK.md](BENCHMARK.md)** for installation, initialization, label
+mapping, train/resume/evaluate commands, and verification limits. The original
+entry points and trainer are archived in `benchmark/reference/`; `trainer.py`,
+`utils.py` and `datasets/dataset_Myops.py` remain as the original reference recipe.
+
+The original Quick Start below describes the upstream release and its old CLI;
+use BENCHMARK.md for this adapted benchmark.
+
 ## 📰 News
 - [12/01/2025] The code for reproducing our multimodal myocardial pathology segmentation results on the MyoPS++ and MyoPS380 datasets is now available. This release is intended for peer review and reproducibility verification. 
 

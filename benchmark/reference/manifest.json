@@ -1,0 +1,16 @@
+{
+  "scar_commit": "55d6df9231ca659e0f36505c9199285f20046d7e",
+  "scar_working_tree": " M README.md\n M preprocessing/build_splits.py\n M preprocessing/preprocessing.py\n M preprocessing/process_and_save.py\n M preprocessing/verify.py\n M run_all.py\n M scar_pipeline.ipynb\n M tests/test_evaluation_logging.py\n M training/config/base.yaml\n M training/config/config_utils.py\n M training/dataset/data_contract.py\n M training/evaluate.py\n M training/train.py\n M training/trainer/trainer.py\n?? MYOPS380_NO_VAL.md\n?? preprocessing/splits/myops380_no_val/\n?? tests/test_no_val.py\n?? training/config/experiments/\n?? training/dataset/no_val.py\n?? training/protocol.py\n?? training/provenance.py\n",
+  "source_files_sha256": {
+    "MYOPS380_NO_VAL.md": "97647720de8e89cb9e215c30e1bc5fd97a2346e0263a4cdace91c75e9a3e4387",
+    "training/config/base.yaml": "4e933032651b67fa89a5db33e9e5f76dffbbaabce7e2f596f963a2479ceeab68",
+    "training/config/experiments/myops380_no_val.yaml": "b5699e3a5a10a191de16dfd1a827e653adf13e46ff22ccb473cc77c3ad6e0ba7",
+    "training/dataset/no_val.py": "0e8ae1937a0a5a536f82029dc5c5501700c9e1102597cabcce0a7127a81b4669",
+    "training/protocol.py": "4834f10ee7da088f80d4536af9a22ba82eb54534396ee3175a28979ffd7b6fa3",
+    "training/dataset/myops_dataset.py": "b5faa401eb2109d0985b8ee4fe93f41ee276c75c701787fe6afadb2d4c2351b3",
+    "training/metrics/surface_distance.py": "4ef2fb739291e534400cabc8a19357283da7afeea98af1f95b219a6a0c95254a",
+    "training/trainer/trainer.py": "72d81e01ff0dea5462c7268bab4f2176e258168a66f5aa0df291e46a53296a8b",
+    "training/predict.py": "44a23982afa8331f4481136585f9ac042b7f1e263a06123f3d110c7b933aca99"
+  },
+  "note": "Snapshot includes uncommitted local SCAR files. MyoPS380 only; metric functions reused verbatim. Augmentation definitions extracted verbatim."
+}

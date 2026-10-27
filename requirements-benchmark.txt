@@ -1,0 +1,9 @@
+# Portable runtime for train.py / evaluate.py; original environment remains in requirements.txt.
+torch>=2.3
+numpy
+scipy
+h5py
+ml_collections
+MedPy
+SimpleITK
+pytest

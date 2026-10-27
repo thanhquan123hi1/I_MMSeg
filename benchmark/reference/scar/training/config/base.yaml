@@ -1,0 +1,64 @@
+# System and Training Defaults for SCAR M2-Plus
+seed: 1234
+deterministic: true
+device: auto
+amp: auto
+cpu_threads: 4
+
+train:
+  no_val: false
+  epochs: 300
+  batch_size: 16
+  accum_steps: 1
+  lr: 0.0003
+  weight_decay: 0.0001
+  clip_grad: 1.0
+  patience: 0
+  min_delta: 0.0
+  save_every: 0
+  log_every: 20
+  epochs_per_run: 0
+  tensorboard: true
+  resume: null
+  pretrained: null
+
+data:
+  data_root: E:/STUDY/DATASET/MyoPS380/Processed_data
+  list_dir: data/processed/splits
+  val_fraction: 0.2
+  label_order: legacy  # Official metadata-free MyoPS380 cache; new packaged cache is canonical.
+  num_workers: 4
+  pin_memory: null
+  sampler: none
+  rare_boost: 2.0
+  foreground_boost: 1.3
+
+model:
+  model_name: M2-Plus
+  ablation: M2-PLUS
+  img_size: 128
+  num_classes: 4
+  gradient_checkpointing: false
+  fused_channels: 512
+  cross_attention_heads: 8
+  fusion_version: spatial_v2
+  latent_dim: 256
+  use_pos_enc: true
+  sspanet_gate: centered_tanh_v2
+  resnet:
+    num_layers: [3, 4, 9]
+    width_factor: 1.0
+  decoder_channels: [256, 128, 64, 16]
+  skip_channels: [512, 256, 64, 0]
+  n_skip: 3
+  activation: logits
+  classifier: seg
+
+loss:
+  ce_weight: 0.5
+  dice_weight: 0.5
+  aar_weight: 0.0
+
+outputs:
+  run_root: outputs/runs
+  dir: auto

@@ -1,0 +1,4 @@
+# Frozen references retain their recorded bytes on Windows and Linux.
+benchmark/reference/** -text
+benchmark/scar_metrics.py -text
+benchmark/scar_augmentation.py text eol=lf

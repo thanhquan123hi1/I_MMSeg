@@ -559,8 +559,8 @@ class VisionTransformer(nn.Module):
         self.zero_head = zero_head #The zero_head parameter is typically used to control the initialisation method for the model's classification head.
         self.classifier = config.classifier  #Define the classifier
         self.patches = config.patches.size
-        self.class_embedding = torch.load(f'{PROJECT_ROOT}/text_features/embedding_class_information.pth', weights_only=True).float()
-        self.modal_embedding = torch.load(f'{PROJECT_ROOT}/text_features/embedding_MRI_information.pth', weights_only=True).float()
+        self.class_embedding = torch.load(f'{PROJECT_ROOT}/text_features/embedding_class_information.pth', map_location='cpu', weights_only=True).float()
+        self.modal_embedding = torch.load(f'{PROJECT_ROOT}/text_features/embedding_MRI_information.pth', map_location='cpu', weights_only=True).float()
         self.transformer1 = Transformer(config, img_size, vis)
         self.transformer2 = Transformer(config, img_size, vis)
         self.transformer3 = Transformer(config, img_size, vis)
@@ -664,10 +664,10 @@ class VisionTransformer(nn.Module):
         self.config = config
 
     def forward(self, x, x1, x2, do_contrast=False):
-        modal_embedding = self.modal_embedding.cuda()
+        modal_embedding = self.modal_embedding.to(x.device)
         modal_features = self.modal_text_to_vision(modal_embedding)
         modal_features_2 = self.modal_text_to_weight(modal_embedding)
-        class_embedding = self.class_embedding.cuda()
+        class_embedding = self.class_embedding.to(x.device)
         class_features = self.text_to_vision(class_embedding)
         if x.size()[1] == 1:
             cine = x.repeat(1,3,1,1)
